@@ -1,0 +1,170 @@
+#爬取phonemore网站上的所有索尼终端信息
+全
+https://www.phonemore.com/phones/
+索尼（一共12页）
+https://www.phonemore.com/specs/?brand=9
+https://www.phonemore.com/specs/?brand=9&z=2
+https://www.phonemore.com/specs/?brand=9&z=3
+…………
+https://www.phonemore.com/specs/?brand=9&z=12
+------
+https://www.phonemore.com/specs/?brand=25
+
+LG-5G
+https://www.phonemore.com/specs/?brand=4&network=5
+
+#Step1
+#爬取12页索尼终端列表源码
+import requests
+from time import sleep
+import pickle
+list_allphone=[]
+for i in range(12):
+    list_allphone.append('https://www.phonemore.com/specs/?brand=9&z='+str(i+1))
+print(list_allphone)
+list_allphone[0]='https://www.phonemore.com/specs/?brand=9'
+print(list_allphone)
+list_sony_all_source=[]
+for i in range(len(list_allphone)):
+    print(i)
+    strhtml = requests.get(list_allphone[i])
+    sleep(15)
+    strhtml.encoding = 'utf-8'
+    #print(strhtml.text)
+    list_sony_all_source.append(strhtml.text)
+
+file_road=r'E:\pycharm\phone\phonemore_sony_all_before'
+pickle.dump(list_sony_all_source,open(file_road,'wb'))
+print(len(list_sony_all_source))
+
+
+--------------
+#Step2
+#根据第一步中获取的终端列表源码，从中获取每一个终端的网址，并进行爬取
+import pickle
+import requests
+from time import sleep
+from bs4 import BeautifulSoup
+file_road=r'E:\pycharm\phone\phonemore_sony_all_before'
+all_before=pickle.load(open(file_road,'rb'))
+
+soup = BeautifulSoup(all_before[0], 'lxml')  #仅用于测试
+list_sony_all_source=[]
+for link in soup.find_all('div','bl1'):
+    phone_name=link.find('strong').get_text()
+    list_sony_all_source.append(phone_name)
+    print(phone_name)
+    phone_href='https://www.phonemore.com'+link.find('a').get('href')
+    list_sony_all_source.append(phone_href)
+    print(phone_href)
+    strhtml = requests.get(phone_href)
+    sleep(15)
+    strhtml.encoding = 'utf-8'
+    list_sony_all_source.append(strhtml.text)
+
+file_road=r'E:\pycharm\phone\phonemore_sony_all_source_t'
+pickle.dump(list_sony_all_source,open(file_road,'wb'))
+print(len(list_sony_all_source))
+
+-------------------------
+#中间有中断过一次
+import pickle
+import requests
+from time import sleep
+from bs4 import BeautifulSoup
+file_road=r'E:\pycharm\phone\phonemore_sony_all_before'
+all_before=pickle.load(open(file_road,'rb'))
+for j in range(len(all_before)-3):
+    i=j+3
+    print(i)
+    soup = BeautifulSoup(all_before[i], 'lxml')
+    list_sony_all_source = []
+    for link in soup.find_all('div', 'bl1'):
+        phone_name = link.find('strong').get_text()
+        list_sony_all_source.append(phone_name)
+        print(phone_name)
+        phone_href = 'https://www.phonemore.com' + link.find('a').get('href')
+        list_sony_all_source.append(phone_href)
+        print(phone_href)
+        strhtml = requests.get(phone_href)
+        sleep(15)
+        strhtml.encoding = 'utf-8'
+        list_sony_all_source.append(strhtml.text)
+    file_road ='E:\pycharm\phone\phonemore_sony_all_source_' + str(i)
+    pickle.dump(list_sony_all_source, open(file_road, 'wb'))
+    print(file_road)
+
+------------------
+#Step3
+#从每个终端源码中，提取终端属性信息
+import pickle
+from bs4 import BeautifulSoup
+import numpy as np
+import pandas as pd
+
+result = pd.DataFrame([['title', 'param', 'brand', 'model']], columns=['title', 'param', 'brand', 'model'])
+for j in range(12):
+    # file_road=r'E:\pycharm\phone\phonemore_sony_all_source_0'
+    file_road = 'E:\pycharm\phone\phonemore_sony_all_source_' + str(j)
+    a1 = pickle.load(open(file_road, 'rb'))
+    a2 = np.array(a1)
+    all_source = a2.reshape((int(len(a2) / 3), 3))
+    for i in range(len(all_source)):
+        soup = BeautifulSoup(all_source[i][2], 'html.parser')
+        # print(soup.prettify())  #按照标准的缩进格式的结构输出
+        list_param = []
+        for link in soup.find_all('tr'):
+            list_md = []
+            for link1 in link.find_all('td'):
+                list_md.append(link1.get_text())
+                # print(link1.get_text())
+            list_param.append(list_md)
+        # print(list_param)
+        test = pd.DataFrame(list_param, columns=['title', 'param'])
+        test['brand'] = 'sony'
+        test['model'] = all_source[i][0]
+        # print(test)
+        result = result.append(test)
+result.to_csv(r"E:\pycharm\phone\phonemore_sony_20201028.csv",index=False,encoding='utf_8_sig')
+
+--------------
+#Step4
+#处理终端属性信息，获取最终结果文件：phonemore_sony_20201028_done.csv
+import pandas as pd
+import numpy as np
+input_path=r"E:\pycharm\phone\phonemore_sony_20201028.csv"
+name_phone=['参数名','参数','品牌','型号']
+phone_all=pd.read_csv(open(input_path, 'rb'), names=name_phone,encoding = 'utf-8')
+
+phone_xh=phone_all[['型号']]
+phone_xh.drop_duplicates(inplace=True) #去重
+col_xh = np.array(phone_xh).tolist()
+col_xh.remove(['model']) #表中原有的字段名，删除
+#print(col_xh)
+col=phone_all[['参数名']]
+col.drop_duplicates(inplace=True) #去重
+list_col = np.array(col).tolist()
+list_col.remove(['title'])  #表中原有的字段名，删除
+#print(list_col)
+col_re=[]
+for i in range(len(list_col)):
+	col_re.append(list_col[i][0])
+#print(col_re)
+template=pd.DataFrame(list_col,columns=['参数名'])
+result = pd.DataFrame(np.arange(len(col_re)).reshape(1,len(col_re)), columns=col_re)
+#print(template)
+
+for i in range(len(col_xh)):
+    print(col_xh[i][0])
+    phone_3 = phone_all[phone_all['型号'] == col_xh[i][0]]
+    phone_4 = pd.merge(template, phone_3, on='参数名', how='left')  # 连接
+    phone_5 = phone_4[['参数名', '参数']]
+    phone_6 = phone_5[['参数名', '参数']].groupby(by=['参数名']).max()
+    phone_6.reset_index(inplace=True)
+    phone_7 = pd.DataFrame(phone_6.values.T, index=phone_6.columns, columns=phone_6['参数名'])  # 转置
+    phone_7.drop(index='参数名', inplace=True)  # 删除行'参数名'
+    phone_7=phone_7[col_re]
+    result = result.append(phone_7)
+print(len(result))
+
+result.to_csv(r"E:\pycharm\phone\phonemore_sony_20201028_done.csv",index=False,encoding='utf_8_sig')
