@@ -108,63 +108,53 @@ for j in range(3): #len(all_before)/2
     print(file_road)
 ========================================================================================================================
 
+#提取终端属性
+
+import pickle
+from bs4 import BeautifulSoup
+import numpy as np
+import pandas as pd
 
 '''
-#查看源码，提取规则
-soup = BeautifulSoup(all_before[0], 'html.parser')
-print(soup.prettify())  #按照标准的缩进格式的结构输出
-for link in soup.find_all('div', 'makers'):
-    for link2 in link.find_all('li'):
-        print(link2.find('a').get_text())
-        print('https://www.gsmarena.com'+link2.find('a').get('href'))
+file_road=r'E:\pycharm\phone\phone888_samsung\html\phone888_samsung_all_source_0'
+a1 = pickle.load(open(file_road, 'rb'))
+a2 = np.array(a1)
+all_source = a2.reshape((int(len(a2) / 3), 3))
+soup = BeautifulSoup(all_source[0][2], 'html.parser')
+list_param = []
+list_title=[]
+ph_title=soup.find('strong').get_text()
+list_title.append(ph_title)
+list_title.append(ph_title)
+list_param.append(list_title)
+for link in soup.find_all('tr'):
+    list_md = []
+    for link1 in link.find_all('td'):
+        list_md.append(link1.get_text())
+        # print(link1.get_text())
+    list_param.append(list_md)
+print(list_param)
 
 
-file_road = r'E:\pycharm\phone\gsmarena_samsung\gsmarena_samsung_before'
-# pickle.dump(all_before,open(file_road,'wb'))
-# print(len(all_before))
-all_before = pickle.load(open(file_road, 'rb'))
-
-# 获取所有手机的源码
-k = 0  # 若爬虫中断，可以调整k值，继续爬虫
-list_sony_all_source = []
-for j in range(len(all_before) - k):
-    i = j + k
-    print(i)
-    soup = BeautifulSoup(all_before[i], 'lxml')
-    # list_sony_all_source = []
-    for link in soup.find_all('div', 'makers'):
-        for link2 in link.find_all('li'):
-            phone_name = link2.find('a').get_text()  # 提取手机型号
-            list_sony_all_source.append(phone_name)
-            print(phone_name)
-            phone_href = 'https://www.gsmarena.com/' + link2.find('a').get('href')  # 提取手机参数网址
-            list_sony_all_source.append(phone_href)
-            print(phone_href)
-            # strhtml = requests.get(phone_href)  # 获取手机参数页面源码
-            # sleep(15)
-            # strhtml.encoding = 'utf-8'
-            # list_sony_all_source.append(strhtml.text)
-    # file_road =r'E:\pycharm\phone\gsmarena_samsung\gsmarena_samsung_source_' + str(i)
-    # pickle.dump(list_sony_all_source, open(file_road, 'wb'))
-    # print(file_road)
-
-file_road = r'E:\pycharm\phone\gsmarena_samsung\gsmarena_samsung_href'
-pickle.dump(list_sony_all_source, open(file_road, 'wb'))
-print(len(list_sony_all_source))
-
-#提取各型号手机的属性参数
+'''
+page=68
 result = pd.DataFrame([['title', 'param', 'brand', 'model']], columns=['title', 'param', 'brand', 'model'])
 for j in range(page):
-    # file_road=r'E:\pycharm\phone\phonemore_sony_Ericsson_source_0'
-    file_road = 'E:\pycharm\phone\phonemore_sony_Ericsson_source_' + str(j)
+    # file_road=r'E:\pycharm\phone\phone888_samsung\html\phone888_samsung_all_source_0'
+    file_road = 'E:\pycharm\phone\phone888_samsung\html\phone888_samsung_all_source_' + str(j)
     a1 = pickle.load(open(file_road, 'rb'))
     a2 = np.array(a1)
     all_source = a2.reshape((int(len(a2) / 3), 3))
     for i in range(len(all_source)):
         soup = BeautifulSoup(all_source[i][2], 'html.parser')
-        # print(soup.prettify())  #按照标准的缩进格式的结构输出，从源码中观察参数展示规律，以便提取
+        # print(soup.prettify())  #按照标准的缩进格式的结构输出
         list_param = []
-        for link in soup.find_all('tr'): #提取属性参数
+        list_title = []
+        ph_title = soup.find('strong').get_text()
+        list_title.append('ph_title')
+        list_title.append(ph_title)
+        list_param.append(list_title)
+        for link in soup.find_all('tr'):
             list_md = []
             for link1 in link.find_all('td'):
                 list_md.append(link1.get_text())
@@ -172,17 +162,20 @@ for j in range(page):
             list_param.append(list_md)
         # print(list_param)
         test = pd.DataFrame(list_param, columns=['title', 'param'])
-        test['brand'] = 'sony'
+        test['brand'] = 'samsung'
         test['model'] = all_source[i][0]
         # print(test)
         result = result.append(test)
-result.to_csv(r"E:\pycharm\phone\phonemore_sony_Ericsson_20201029.csv",index=False,encoding='utf_8_sig')
+result.to_csv(r"E:\pycharm\phone\phone888_samsung\phone888_samsung_20201127.csv",index=False,encoding='utf_8_sig')
 
-
-#规格化手机属性参数
-input_path=r"E:\pycharm\phone\phonemore_sony_Ericsson_20201029.csv"
+--------------------------------------------------
+#整理，规格化终端属性
+import pandas as pd
+import numpy as np
+input_path=r"E:\pycharm\phone\phone888_samsung\phone888_samsung_20201127.csv"
 name_phone=['参数名','参数','品牌','型号']
 phone_all=pd.read_csv(open(input_path, 'rb'), names=name_phone,encoding = 'utf-8')
+
 phone_xh=phone_all[['型号']]
 phone_xh.drop_duplicates(inplace=True) #去重
 col_xh = np.array(phone_xh).tolist()
@@ -197,8 +190,8 @@ col_re=[]
 for i in range(len(list_col)):
 	col_re.append(list_col[i][0])
 #print(col_re)
-template=pd.DataFrame(list_col,columns=['参数名']) #组合所有参数名，作为标准格式
-result = pd.DataFrame(np.arange(len(col_re)).reshape(1,len(col_re)), columns=col_re) #最后的结果格式
+template=pd.DataFrame(list_col,columns=['参数名'])
+result = pd.DataFrame(np.arange(len(col_re)).reshape(1,len(col_re)), columns=col_re)
 #print(template)
 
 for i in range(len(col_xh)):
@@ -211,9 +204,8 @@ for i in range(len(col_xh)):
     phone_7 = pd.DataFrame(phone_6.values.T, index=phone_6.columns, columns=phone_6['参数名'])  # 转置
     phone_7.drop(index='参数名', inplace=True)  # 删除行'参数名'
     phone_7=phone_7[col_re]
-    result = result.append(phone_7) #插入手机属性到结果中
+    result = result.append(phone_7)
 print(len(result))
 
-result.to_csv(r"E:\pycharm\phone\phonemore_sony_Ericsson_20201029_done.csv",index=False,encoding='utf_8_sig')
+result.to_csv(r"E:\pycharm\phone\phone888_samsung\phone888_samsung_20201127_done.csv",index=False,encoding='utf_8_sig')
 
-'''
