@@ -68,6 +68,45 @@ for j in range(5): #len(all_before)/2  #设置一次爬取的页面数
 
 
 
+========================================================================================================================
+#直接设置到底要爬取哪一页，比之前的方法要更好
+import pickle
+import requests
+from time import sleep
+from bs4 import BeautifulSoup
+
+page=68
+list_allphone=[]  #爬取的目标手机列表页面共7页，将网址存放倒列表中
+for i in range(page):
+    list_allphone.append('https://www.phone888.cn/specs/?brand=5&z='+str(i+1))
+print(list_allphone)
+list_allphone[0]='https://www.phone888.cn/specs/?brand=5'
+print(list_allphone)
+
+for j in range(3): #len(all_before)/2
+    num=43
+    i=num+j
+    print(i)
+    strhtml = requests.get(list_allphone[i])
+    sleep(15)
+    strhtml.encoding = 'utf-8'
+    soup = BeautifulSoup(strhtml.text, 'lxml')
+    list_sony_all_source = []
+    for link in soup.find_all('div', 'bl1'):
+        phone_name = link.find('strong').get_text()
+        list_sony_all_source.append(phone_name)
+        print(phone_name)
+        phone_href = 'https://www.phone888.cn' + link.find('a').get('href')
+        list_sony_all_source.append(phone_href)
+        print(phone_href)
+        strhtml = requests.get(phone_href)
+        sleep(15)
+        strhtml.encoding = 'utf-8'
+        list_sony_all_source.append(strhtml.text)
+    file_road ='E:\pycharm\phone\phone888_samsung\phone888_samsung_all_source_' + str(i)
+    pickle.dump(list_sony_all_source, open(file_road, 'wb'))
+    print(file_road)
+========================================================================================================================
 
 
 '''
